@@ -1,0 +1,62 @@
+services:
+  - name: genfren-api-standby
+    type: web
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: PORT
+        value: "4000"
+      - key: NODE_ENV
+        value: production
+      - key: SERVICE_NAME
+        value: genfren-api-standby
+      - key: SERVICE_ROLE
+        value: standby
+      - key: JWT_SECRET
+        generateValue: true
+      - key: FRONTEND_URL
+        value: https://thegenfren.vercel.app
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: BRADBURY_RPC_URL
+        value: https://rpc-bradbury.genlayer.com
+      - key: STUDIONET_RPC_URL
+        value: https://studio.genlayer.com/api
+      - key: PLATFORM_PRIVATE_KEY
+        sync: false
+      - key: BRADBURY_TREASURY_ADDRESS
+        sync: false
+      - key: FACTORY_CONTRACT_ADDRESS
+        sync: false
+
+  - name: genfren-worker-standby
+    type: worker
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./apps/worker/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SERVICE_NAME
+        value: genfren-worker-standby
+      - key: SERVICE_ROLE
+        value: standby
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: BRADBURY_RPC_URL
+        value: https://rpc-bradbury.genlayer.com
+      - key: STUDIONET_RPC_URL
+        value: https://studio.genlayer.com/api
+      - key: PLATFORM_PRIVATE_KEY
+        sync: false
+      - key: BRADBURY_TREASURY_ADDRESS
+        sync: false
+      - key: FACTORY_CONTRACT_ADDRESS
+        sync: false

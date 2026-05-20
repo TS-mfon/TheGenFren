@@ -1,0 +1,26 @@
+{
+  "name": "@genfren/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "node --import tsx src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "bullmq": "^5.76.10",
+    "dotenv": "^17.4.2",
+    "genlayer-js": "^1.1.8",
+    "ioredis": "^5.10.1",
+    "pg": "^8.21.0",
+    "viem": "^2.49.3",
+    "@genfren/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.15.6",
+    "tsx": "^4.19.1",
+    "typescript": "^5.6.3"
+  }
+}

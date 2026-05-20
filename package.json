@@ -1,0 +1,33 @@
+{
+  "name": "genfren",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev": "npm run dev --workspace @genfren/web",
+    "dev:api": "npm run dev --workspace @genfren/api",
+    "dev:worker": "npm run dev --workspace @genfren/worker",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "deploy:contracts": "tsx scripts/deploy-contracts.ts",
+    "env:render": "tsx scripts/render-env.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "^11.0.2",
+    "@fastify/jwt": "^10.0.0",
+    "bcryptjs": "^3.0.3",
+    "bullmq": "^5.76.10",
+    "dotenv": "^17.4.2",
+    "framer-motion": "^12.39.0",
+    "genlayer-js": "^1.1.8",
+    "ioredis": "^5.10.1",
+    "pg": "^8.21.0",
+    "viem": "^2.49.3",
+    "zod": "^4.4.3"
+  }
+}
