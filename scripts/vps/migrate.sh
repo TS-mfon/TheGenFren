@@ -8,4 +8,4 @@ cd "$ROOT_DIR"
 set -a
 source "$ENV_FILE"
 set +a
-node --import tsx scripts/migrate.ts
+npm exec tsx scripts/migrate.ts
