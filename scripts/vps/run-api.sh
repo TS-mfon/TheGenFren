@@ -8,4 +8,4 @@ cd "$ROOT_DIR"
 set -a
 source "$ENV_FILE"
 set +a
-exec npm run start --workspace @genfren/api
+exec npm exec tsx apps/api/src/server.ts
