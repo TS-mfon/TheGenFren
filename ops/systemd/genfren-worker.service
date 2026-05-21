@@ -1,0 +1,21 @@
+[Unit]
+Description=GenFren Worker
+After=network-online.target docker.service genfren-api.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/genfren
+Environment=GENFREN_ROOT=/root/genfren
+Environment=GENFREN_ENV_FILE=/root/genfren/.env.vps
+ExecStartPre=/usr/bin/bash /root/genfren/scripts/vps/prepare-data.sh
+ExecStart=/usr/bin/bash /root/genfren/scripts/vps/run-worker.sh
+Restart=always
+RestartSec=5
+TimeoutStartSec=300
+KillMode=process
+
+[Install]
+WantedBy=multi-user.target
