@@ -11,6 +11,9 @@
     "resolveJsonModule": true,
     "baseUrl": ".",
     "paths": {
+      "@genfren/shared": [
+        "packages/shared/src/index.ts"
+      ],
       "@genfren/shared/*": [
         "packages/shared/src/*"
       ]

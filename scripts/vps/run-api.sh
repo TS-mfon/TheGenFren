@@ -8,4 +8,4 @@ cd "$ROOT_DIR"
 set -a
 source "$ENV_FILE"
 set +a
-exec npm exec tsx apps/api/src/server.ts
+exec node apps/api/dist/server.js

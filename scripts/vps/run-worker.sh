@@ -8,4 +8,4 @@ cd "$ROOT_DIR"
 set -a
 source "$ENV_FILE"
 set +a
-exec npm exec tsx apps/worker/src/index.ts
+exec node apps/worker/dist/index.js
