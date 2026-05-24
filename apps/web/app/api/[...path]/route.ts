@@ -69,8 +69,8 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
 
   if (!primaryUrl) {
     return NextResponse.json(
-      { error: "PRIMARY_API_URL is not configured." },
-      { status: 500 }
+      { error: "Hosted backend unavailable. The app will continue in local vault mode where supported." },
+      { status: 503, headers: { "x-genfren-api-target": "unavailable" } }
     );
   }
 
@@ -109,9 +109,8 @@ async function proxy(request: NextRequest, context: { params: Promise<{ path: st
     }
   }
 
-  const message = lastError instanceof Error ? lastError.message : "All API targets failed.";
   return NextResponse.json(
-    { error: message },
+    { error: "Hosted backend unavailable. The app will continue in local vault mode where supported." },
     { status: 503, headers: { "x-genfren-api-target": "unavailable" } }
   );
 }
