@@ -74,6 +74,8 @@ function isNetworkUnavailable(error: unknown) {
     message.includes("networkerror") ||
     message.includes("all api targets failed") ||
     message.includes("api targets") ||
+    message.includes("primary_api_url") ||
+    message.includes("not configured") ||
     message.includes("unavailable")
   );
 }
