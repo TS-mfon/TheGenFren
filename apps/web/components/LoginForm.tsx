@@ -22,7 +22,9 @@ export function LoginForm() {
         username: String(form.get("username") ?? ""),
         password: String(form.get("password") ?? "")
       });
-      saveVault(result.vault as any);
+      if (result.vault?.encryptedPrivateKey && result.vault?.encryptedPrivateKeyNonce && result.vault?.vaultSalt) {
+        saveVault(result.vault as any);
+      }
       router.push("/dashboard");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Login failed.");

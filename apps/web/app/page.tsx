@@ -14,10 +14,12 @@ export default function HomePage() {
           </Link>
           <nav className="topnav" aria-label="Landing">
             <Link className="topnav-item active" href="/">Overview</Link>
+            <Link className="topnav-item" href="/auth/signup">Sign up</Link>
+            <Link className="topnav-item" href="/auth/login">Login</Link>
             <Link className="topnav-item" href="/dashboard">Workspace</Link>
             <Link className="topnav-item" href="/briefings">Briefings</Link>
           </nav>
-          <Link className="wallet-pill" href="/auth/login">Open app</Link>
+          <Link className="wallet-pill" href="/auth/signup">Create vault</Link>
         </div>
       </header>
       <main className="shell hero">
@@ -36,7 +38,7 @@ export default function HomePage() {
             </p>
             <div className="cta-row">
               <Link className="button primary" href="/auth/signup">Start your companion</Link>
-              <Link className="button secondary" href="/dashboard">See the workspace</Link>
+              <Link className="button secondary" href="/auth/login">Login to vault</Link>
             </div>
           </div>
           <div className="hero-ornament right">
