@@ -8,4 +8,4 @@ COPY packages/shared/package.json packages/shared/package.json
 RUN npm install
 COPY . .
 RUN npm run build --workspace @genfren/api
-CMD ["npm", "run", "start", "--workspace", "@genfren/api"]
+CMD ["sh", "-c", "npm run build --workspace @genfren/api && npm run start --workspace @genfren/api"]
