@@ -62,8 +62,8 @@ let lastPrimaryFailureAt = 0;
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
-  const primaryUrl = process.env.PRIMARY_API_URL;
-  const fallbackUrl = process.env.FALLBACK_API_URL;
+  const primaryUrl = process.env.PRIMARY_API_URL || "http://172.236.110.179:4101";
+  const fallbackUrl = process.env.FALLBACK_API_URL || "https://genfren-api-standby.onrender.com";
   const timeoutMs = Number(process.env.API_FAILOVER_TIMEOUT_MS ?? 4000);
   const cooldownMs = Number(process.env.API_FAILOVER_COOLDOWN_MS ?? 30000);
 
