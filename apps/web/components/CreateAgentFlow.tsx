@@ -1,32 +1,69 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 import { createAgent, submitPayment } from "../lib/api";
-import { sendCreationPayment } from "../lib/vault";
+import { loadVault, sendCreationPayment } from "../lib/vault";
+
+const TREASURY_ADDRESS = process.env.NEXT_PUBLIC_BRADBURY_TREASURY_ADDRESS ?? "0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E";
+const BRADBURY_RPC = process.env.NEXT_PUBLIC_BRADBURY_RPC_URL ?? "https://rpc-bradbury.genlayer.com";
 
 export function CreateAgentFlow() {
   const router = useRouter();
   const [paymentHash, setPaymentHash] = useState("");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [vaultAddress, setVaultAddress] = useState("");
   const [pendingPay, setPendingPay] = useState(false);
   const [pendingCreate, setPendingCreate] = useState(false);
 
-  async function pay(event: FormEvent<HTMLFormElement>) {
+  useEffect(() => {
+    setVaultAddress(loadVault()?.walletAddress ?? "");
+  }, []);
+
+  async function approveFromVault(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setPendingPay(true);
     setError("");
+    setNotice("");
     const form = new FormData(event.currentTarget);
     try {
       const txHash = await sendCreationPayment(String(form.get("paymentPassword") ?? ""));
       setPaymentHash(txHash);
       await submitPayment(txHash);
+      setNotice("Activation transaction submitted. You can create your companion once verification completes.");
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Payment failed.");
     } finally {
       setPendingPay(false);
     }
+  }
+
+  async function submitManualPayment(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setPendingPay(true);
+    setError("");
+    setNotice("");
+    const form = new FormData(event.currentTarget);
+    const txHash = String(form.get("txHash") ?? "").trim();
+    try {
+      if (!/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
+        throw new Error("Paste a valid Bradbury transaction hash. It should start with 0x and be 66 characters long.");
+      }
+      setPaymentHash(txHash);
+      await submitPayment(txHash);
+      setNotice("Payment hash submitted. GenFren will verify the sender, treasury address, amount, and confirmation state.");
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : "Payment submission failed.");
+    } finally {
+      setPendingPay(false);
+    }
+  }
+
+  async function copyTreasury() {
+    await navigator.clipboard.writeText(TREASURY_ADDRESS);
+    setNotice("Treasury address copied.");
   }
 
   async function create(event: FormEvent<HTMLFormElement>) {
@@ -35,6 +72,9 @@ export function CreateAgentFlow() {
     setError("");
     const form = new FormData(event.currentTarget);
     try {
+      if (!paymentHash) {
+        throw new Error("Activate GenFren first by sending 10 GEN to the treasury and submitting the transaction hash.");
+      }
       await createAgent({
         name: String(form.get("name") ?? ""),
         archetype: String(form.get("archetype") ?? "research") as any,
@@ -61,15 +101,52 @@ export function CreateAgentFlow() {
         <div className="pill">Unlock your companion</div>
         <h1 style={{ marginBottom: 10 }}>Activate GenFren</h1>
         <p className="muted">
-          Use the local vault to approve the one-time activation. Once it clears, your companion can be created and kept private to you.
+          Send a one-time 10 GEN activation payment on Bradbury, then submit the transaction hash so GenFren can verify it.
         </p>
-        <form className="form-grid" style={{ marginTop: 16 }} onSubmit={pay}>
-          <input name="paymentPassword" placeholder="Vault password" type="password" required />
+
+        <div className="panel" style={{ marginTop: 16 }}>
+          <div className="eyebrow">Payment details</div>
+          <div className="payment-detail">
+            <span>Amount</span>
+            <strong>10 GEN</strong>
+          </div>
+          <div className="payment-detail">
+            <span>Network</span>
+            <strong>Bradbury</strong>
+          </div>
+          <div className="payment-detail address-row">
+            <span>Treasury</span>
+            <code>{TREASURY_ADDRESS}</code>
+          </div>
+          <div className="cta-row" style={{ marginTop: 14 }}>
+            <button className="button secondary" type="button" onClick={copyTreasury}>Copy treasury</button>
+            <a className="button ghost" href={BRADBURY_RPC} target="_blank" rel="noreferrer">Bradbury RPC</a>
+          </div>
+          {vaultAddress ? (
+            <p className="muted" style={{ marginTop: 12 }}>
+              Your local vault address is <code>{vaultAddress}</code>. Fund it first if you want GenFren to send the activation payment for you.
+            </p>
+          ) : null}
+        </div>
+
+        <form className="form-grid" style={{ marginTop: 16 }} onSubmit={submitManualPayment}>
+          <input name="txHash" placeholder="Paste Bradbury payment transaction hash" required />
           <button className="button primary" type="submit" disabled={pendingPay}>
+            {pendingPay ? "Submitting hash..." : "Submit payment hash"}
+          </button>
+        </form>
+
+        <div className="divider-label">or approve from a funded local vault</div>
+
+        <form className="form-grid" style={{ marginTop: 16 }} onSubmit={approveFromVault}>
+          <input name="paymentPassword" placeholder="Vault password" type="password" required />
+          <button className="button secondary" type="submit" disabled={pendingPay}>
             {pendingPay ? "Approving activation..." : "Approve activation"}
           </button>
         </form>
-        {paymentHash ? <div className="muted" style={{ marginTop: 12 }}>Activation submitted. GenFren is waiting for confirmation.</div> : null}
+        {paymentHash ? <div className="muted" style={{ marginTop: 12 }}>Activation submitted: <code>{paymentHash}</code></div> : null}
+        {notice ? <div className="success-text">{notice}</div> : null}
+        {error ? <div className="error-text">{error}</div> : null}
       </section>
 
       <section className="panel surface">
@@ -101,7 +178,6 @@ export function CreateAgentFlow() {
               <option value="weekly">Weekly</option>
             </select>
           </div>
-          {error ? <div className="error-text">{error}</div> : null}
           <button className="button primary" type="submit" disabled={pendingCreate}>
             {pendingCreate ? "Creating your companion..." : "Create GenFren"}
           </button>

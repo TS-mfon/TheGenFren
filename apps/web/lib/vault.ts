@@ -1,6 +1,6 @@
 "use client";
 
-import { createWalletClient, http, parseEther } from "viem";
+import { createPublicClient, createWalletClient, formatEther, http, parseEther } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { createClient } from "genlayer-js";
 import { studionet } from "genlayer-js/chains";
@@ -85,24 +85,49 @@ export async function decryptVault(password: string, vault = loadVault()) {
 export async function sendCreationPayment(password: string) {
   const privateKey = await decryptVault(password);
   const account = privateKeyToAccount(privateKey);
+  const rpcUrl = process.env.NEXT_PUBLIC_BRADBURY_RPC_URL ?? "https://rpc-bradbury.genlayer.com";
+  const chain = {
+    id: 4221,
+    name: "GenLayer Bradbury Testnet",
+    nativeCurrency: { name: "GEN", symbol: "GEN", decimals: 18 },
+    rpcUrls: {
+      default: { http: [rpcUrl] }
+    }
+  } as const;
+
+  const publicClient = createPublicClient({
+    chain,
+    transport: http(rpcUrl)
+  });
+  const balance = await publicClient.getBalance({ address: account.address });
+  const requiredAmount = parseEther("10");
+  if (balance < requiredAmount) {
+    throw new Error(
+      `This vault has ${Number(formatEther(balance)).toFixed(4)} GEN. Fund ${account.address} with at least 10 GEN on Bradbury, then try again or paste the payment transaction hash below.`
+    );
+  }
+
   const client = createWalletClient({
     account,
-    chain: {
-      id: 4221,
-      name: "GenLayer Bradbury Testnet",
-      nativeCurrency: { name: "GEN", symbol: "GEN", decimals: 18 },
-      rpcUrls: {
-        default: { http: [process.env.NEXT_PUBLIC_BRADBURY_RPC_URL ?? "https://rpc-bradbury.genlayer.com"] }
-      }
-    },
-    transport: http(process.env.NEXT_PUBLIC_BRADBURY_RPC_URL ?? "https://rpc-bradbury.genlayer.com")
+    chain,
+    transport: http(rpcUrl)
   });
-  return client.sendTransaction({
-    account,
-    to: (process.env.NEXT_PUBLIC_BRADBURY_TREASURY_ADDRESS ??
-      "0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E") as `0x${string}`,
-    value: parseEther("10")
-  });
+  try {
+    return await client.sendTransaction({
+      account,
+      to: (process.env.NEXT_PUBLIC_BRADBURY_TREASURY_ADDRESS ??
+        "0x5905c9Dea6Ae52AA0947D8F7F218263889eDfC4E") as `0x${string}`,
+      value: requiredAmount
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Activation payment failed.";
+    if (message.includes("LackOfFundForMaxFee") || message.toLowerCase().includes("lackoffund") || message.toLowerCase().includes("insufficient")) {
+      throw new Error(
+        `The vault does not have enough GEN to approve activation. Fund ${account.address} on Bradbury with 10 GEN plus gas, or send 10 GEN manually to the treasury and paste the transaction hash.`
+      );
+    }
+    throw new Error("Activation payment could not be submitted. You can still send 10 GEN manually to the treasury and paste the transaction hash.");
+  }
 }
 
 export async function deploySubagentWithUserKey(args: {

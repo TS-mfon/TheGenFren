@@ -629,6 +629,51 @@ p {
   font-weight: 600;
 }
 
+.success-text {
+  margin-top: 12px;
+  color: #0a7f74;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.payment-detail {
+  display: grid;
+  grid-template-columns: 90px 1fr;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.payment-detail:last-of-type {
+  border-bottom: 0;
+}
+
+.payment-detail span {
+  font-size: 12px;
+  color: var(--muted-soft);
+}
+
+.payment-detail strong,
+.payment-detail code,
+code {
+  overflow-wrap: anywhere;
+}
+
+code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: #2c2c2c;
+}
+
+.divider-label {
+  margin-top: 18px;
+  color: var(--muted-soft);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
 .tour-backdrop {
   position: fixed;
   inset: 0;
