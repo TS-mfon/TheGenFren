@@ -1,5 +1,5 @@
-import { DashboardClient } from "../../components/DashboardClient";
+import { redirect } from "next/navigation";
 
 export default function MemoryPage() {
-  return <DashboardClient section="memory" />;
+  redirect("/audit");
 }

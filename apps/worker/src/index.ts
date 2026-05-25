@@ -10,7 +10,7 @@ import { studionet } from "genlayer-js/chains";
 import { query } from "../../api/src/lib/db.js";
 import { acquireLeadershipLock, redis, releaseLeadershipLock, renewLeadershipLock } from "../../api/src/lib/redis.js";
 import { config } from "../../api/src/config.js";
-import { ensureBriefingSchedule, storeMemory } from "../../api/src/services/agent.js";
+import { ensureBriefingSchedule, storeMemory, writeAuditLog } from "../../api/src/services/agent.js";
 import { reasonWithAgent } from "../../api/src/services/genlayer.js";
 
 async function processPayment(job: Job<{ paymentId: string }>) {
@@ -97,12 +97,36 @@ async function processBriefing(job: Job<{ agentId: string; goalId: string; taskI
       `update task_runs set completed_at = now(), status = 'completed', result_summary = $2 where id = $1`,
       [runId, reasoning.summary]
     );
+    await writeAuditLog({
+      actorType: "worker",
+      actorId: config.SERVICE_NAME,
+      agentId: job.data.agentId,
+      action: "briefing.completed",
+      payload: {
+        taskId: job.data.taskId,
+        runId,
+        title: reasoning.title,
+        confidence: reasoning.confidence,
+        consensusState: reasoning.consensus_state
+      }
+    });
     return reasoning;
   } catch (error) {
     await query(
       `update task_runs set completed_at = now(), status = 'failed', error_code = $2 where id = $1`,
       [runId, error instanceof Error ? error.message : "unknown_error"]
     );
+    await writeAuditLog({
+      actorType: "worker",
+      actorId: config.SERVICE_NAME,
+      agentId: job.data.agentId,
+      action: "briefing.failed",
+      payload: {
+        taskId: job.data.taskId,
+        runId,
+        error: error instanceof Error ? error.message : "unknown_error"
+      }
+    });
     throw error;
   }
 }

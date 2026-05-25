@@ -381,6 +381,12 @@ p {
   transform: translateY(-1px);
 }
 
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
 .button.primary {
   background: var(--text);
   color: #fff;
@@ -563,6 +569,13 @@ p {
   gap: 20px;
 }
 
+.chat-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
 .chat-bubble {
   max-width: 70ch;
   padding: 18px 20px;
@@ -573,6 +586,20 @@ p {
 
 .chat-bubble.agent {
   background: #fff;
+}
+
+.chat-bubble.user {
+  justify-self: end;
+  background: #fff7f4;
+  border-color: #f1d6cb;
+}
+
+.chat-meta {
+  margin-top: 12px;
+}
+
+.loading-bubble {
+  color: var(--muted);
 }
 
 .input-row {
@@ -709,6 +736,92 @@ code {
 
 .tour-dot.active {
   background: var(--accent);
+}
+
+.section-pitch,
+.setup-card,
+.empty-feature,
+.loading-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.section-pitch {
+  background: linear-gradient(135deg, #ffffff, #fff8f5);
+}
+
+.section-pitch h2,
+.setup-card h1 {
+  font-size: 28px;
+  line-height: 1.1;
+}
+
+.empty-feature {
+  border-style: dashed;
+  background: #fffdfb;
+}
+
+.audit-timeline {
+  display: grid;
+  gap: 14px;
+}
+
+.audit-timeline.compact {
+  gap: 12px;
+}
+
+.audit-entry,
+.audit-row {
+  display: grid;
+  grid-template-columns: 18px 1fr;
+  gap: 14px;
+  align-items: start;
+}
+
+.audit-row {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.audit-row:last-child {
+  border-bottom: 0;
+}
+
+.audit-dot {
+  width: 12px;
+  height: 12px;
+  margin-top: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 5px rgba(232, 68, 26, 0.1);
+}
+
+.skeleton {
+  border-radius: 20px;
+  background: linear-gradient(90deg, #ecece8, #fafaf8, #ecece8);
+  background-size: 240% 100%;
+  animation: skeleton-pulse 1.6s ease infinite;
+}
+
+.hero-skeleton {
+  min-height: 180px;
+}
+
+.metric-skeleton {
+  min-height: 112px;
+}
+
+.table-skeleton {
+  min-height: 260px;
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 @media (max-width: 1080px) {

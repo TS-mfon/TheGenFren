@@ -1,5 +1,5 @@
-import { DashboardClient } from "../../components/DashboardClient";
+import { redirect } from "next/navigation";
 
 export default function DelegationPage() {
-  return <DashboardClient section="delegation" />;
+  redirect("/dashboard");
 }

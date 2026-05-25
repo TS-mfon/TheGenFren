@@ -1,4 +1,4 @@
-import type { AgentSnapshot, AgentRecord, AutonomyPolicy, Briefing, DelegationGrant, Goal, MemoryItem, PaymentReceipt, SubAgent, TaskRun, User } from "@genfren/shared";
+import type { AgentSnapshot, AgentRecord, AuditLog, AutonomyPolicy, Briefing, DelegationGrant, Goal, MemoryItem, PaymentReceipt, SubAgent, TaskRun, User } from "@genfren/shared";
 
 import { query } from "../lib/db.js";
 
@@ -87,11 +87,12 @@ export async function getSnapshot(userId: string): Promise<AgentSnapshot> {
       briefings: [],
       tasks: [],
       memory: [],
-      delegation: []
+      delegation: [],
+      auditLogs: []
     };
   }
 
-  const [briefings, tasks, memory, delegation] = await Promise.all([
+  const [briefings, tasks, memory, delegation, auditLogs] = await Promise.all([
     query<Briefing>(
       `select id, agent_id as "agentId", goal_id as "goalId", title, summary, confidence,
               consensus_state as "consensusState", source_refs as "sourceRefs", created_at as "createdAt"
@@ -115,6 +116,12 @@ export async function getSnapshot(userId: string): Promise<AgentSnapshot> {
               role, created_at as "grantedAt"
        from delegations where agent_id = $1 and revoked_at is null order by created_at desc`,
       [agent.id]
+    ),
+    query<AuditLog>(
+      `select id, actor_type as "actorType", actor_id as "actorId", agent_id as "agentId",
+              action, payload, created_at as "createdAt"
+       from audit_logs where agent_id = $1 order by created_at desc limit 40`,
+      [agent.id]
     )
   ]);
 
@@ -125,6 +132,7 @@ export async function getSnapshot(userId: string): Promise<AgentSnapshot> {
     briefings: briefings.rows,
     tasks: tasks.rows,
     memory: memory.rows,
-    delegation: delegation.rows
+    delegation: delegation.rows,
+    auditLogs: auditLogs.rows
   };
 }

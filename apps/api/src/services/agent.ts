@@ -32,6 +32,27 @@ export async function ensureBriefingSchedule(taskId: string, job: { agentId: str
   });
 }
 
+export async function writeAuditLog(args: {
+  actorType: "user" | "agent" | "system" | "worker";
+  actorId: string;
+  agentId?: string | null;
+  action: string;
+  payload?: Record<string, unknown>;
+}) {
+  await query(
+    `insert into audit_logs (id, actor_type, actor_id, agent_id, action, payload)
+     values ($1, $2, $3, $4, $5, $6::jsonb)`,
+    [
+      makeId("aud"),
+      args.actorType,
+      args.actorId,
+      args.agentId ?? null,
+      args.action,
+      JSON.stringify(args.payload ?? {})
+    ]
+  );
+}
+
 export async function createAgentForUser(args: {
   userId: string;
   name: string;
@@ -109,6 +130,20 @@ export async function createAgentForUser(args: {
        values ($1, $2, $3, 'deployment', 'Primary agent deployed', $4)`,
       [makeId("ntf"), user.id, agentId, `${args.name} is live on StudioNet.`]
     );
+    await writeAuditLog({
+      actorType: "system",
+      actorId: user.id,
+      agentId,
+      action: "agent.primary.deployed",
+      payload: {
+        name: args.name,
+        archetype: args.archetype,
+        topic: args.topic,
+        cadence: args.cadence,
+        contractAddress: deployment.contractAddress,
+        deploymentTxHash: deployment.txHash
+      }
+    });
     await query("commit");
   } catch (error) {
     await query("rollback");
@@ -152,10 +187,26 @@ export async function chatWithAgent(userId: string, message: string) {
      on conflict do nothing`,
     [makeId("brn"), agent.id, branchSummary]
   );
+  await writeAuditLog({
+    actorType: "agent",
+    actorId: agent.id,
+    agentId: agent.id,
+    action: "agent.chat.reasoned",
+    payload: {
+      source: "contract",
+      contractAddress: agent.contractAddress,
+      messageLength: message.length,
+      replyTitle: typeof reasoning === "object" && reasoning !== null && "title" in reasoning ? String((reasoning as { title?: unknown }).title ?? "") : "Agent reply",
+      confidence: typeof reasoning === "object" && reasoning !== null && "confidence" in reasoning ? String((reasoning as { confidence?: unknown }).confidence ?? "") : "",
+      consensusState: typeof reasoning === "object" && reasoning !== null && "consensus_state" in reasoning ? String((reasoning as { consensus_state?: unknown }).consensus_state ?? "") : ""
+    }
+  });
 
   return {
     reply: reasoning,
-    state: ["retrieving memory", "running consensus", "updating memory"]
+    state: ["retrieving memory", "running consensus", "updating memory"],
+    source: "contract",
+    contractAddress: agent.contractAddress
   };
 }
 
@@ -188,6 +239,19 @@ export async function registerSubagent(args: {
        values ($1, $2, $3, 'subagent', 'Subagent registered', $4)`,
       [makeId("ntf"), args.userId, agent.id, `${args.name} is live and linked to your primary agent.`]
     );
+    await writeAuditLog({
+      actorType: "user",
+      actorId: args.userId,
+      agentId: agent.id,
+      action: "agent.subagent.registered",
+      payload: {
+        name: args.name,
+        archetype: args.archetype,
+        contractAddress: args.contractAddress,
+        deploymentTxHash: args.deploymentTxHash,
+        registerTxHash: args.registerTxHash
+      }
+    });
     await query("commit");
   } catch (error) {
     await query("rollback");
@@ -205,11 +269,7 @@ export async function grantDelegation(userId: string, input: { handle: string; a
      values ($1, $2, $3, $4, $5, $6)`,
     [id, agent.id, userId, input.handle, input.address, input.role]
   );
-  await query(
-    `insert into audit_logs (id, actor_type, actor_id, agent_id, action, payload)
-     values ($1, 'user', $2, $3, 'delegation.grant', $4::jsonb)`,
-    [makeId("aud"), userId, agent.id, JSON.stringify(input)]
-  );
+  await writeAuditLog({ actorType: "user", actorId: userId, agentId: agent.id, action: "delegation.grant", payload: input });
   return getSnapshot(userId);
 }
 

@@ -98,6 +98,16 @@ export interface DelegationGrant {
   delegateAddress?: string;
 }
 
+export interface AuditLog {
+  id: string;
+  actorType: "user" | "agent" | "system" | "worker";
+  actorId: string;
+  agentId?: string | null;
+  action: string;
+  payload: Record<string, unknown>;
+  createdAt: string;
+}
+
 export interface AgentRecord {
   id: string;
   ownerId: string;
@@ -119,6 +129,7 @@ export interface AgentSnapshot {
   tasks: TaskRun[];
   memory: MemoryItem[];
   delegation: DelegationGrant[];
+  auditLogs: AuditLog[];
 }
 
 export interface SignupPayload {

@@ -7,8 +7,7 @@ const navItems = [
   { href: "/briefings", label: "Briefings" },
   { href: "/tasks", label: "Tasks" },
   { href: "/subagents", label: "Specialists" },
-  { href: "/delegation", label: "Shared access" },
-  { href: "/memory", label: "Memory" }
+  { href: "/audit", label: "Audit logs" }
 ] as const;
 
 export function AppShell({ children, section }: { children: ReactNode; section: string }) {
@@ -42,7 +41,7 @@ export function AppShell({ children, section }: { children: ReactNode; section: 
           <div className="rail-card">
             <div className="eyebrow">Today</div>
             <h2>One calm surface for ongoing work.</h2>
-            <p className="muted">Briefings, memory, tasks, and specialist support stay organized without turning into a control panel maze.</p>
+            <p className="muted">Briefings, tasks, specialist support, and audit logs stay organized without turning into a control panel maze.</p>
           </div>
           <div className="rail-card">
             <div className="eyebrow">Working model</div>

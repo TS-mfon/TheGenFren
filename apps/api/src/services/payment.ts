@@ -3,6 +3,8 @@ import { query } from "../lib/db.js";
 import { paymentQueue } from "../lib/redis.js";
 import { verifyBradburyTransfer } from "./genlayer.js";
 import { getCurrentPayment, getUserById } from "./snapshot.js";
+import { getCurrentAgent } from "./snapshot.js";
+import { writeAuditLog } from "./agent.js";
 
 export async function submitPayment(userId: string, txHash: string) {
   const user = await getUserById(userId);
@@ -18,6 +20,17 @@ export async function submitPayment(userId: string, txHash: string) {
      where id = $1`,
     [id, txHash]
   );
+  const agent = await getCurrentAgent(userId);
+  await writeAuditLog({
+    actorType: "user",
+    actorId: userId,
+    agentId: agent?.id ?? null,
+    action: "payment.submitted",
+    payload: {
+      txHash,
+      network: "bradbury"
+    }
+  });
   await paymentQueue.add("verify-payment", { paymentId: id }, { jobId: id });
   return refreshPayment(id);
 }
@@ -52,5 +65,17 @@ export async function refreshPayment(paymentId: string) {
   if (verification.confirmed) {
     await query(`update users set status = 'active' where id = $1`, [user.id]);
   }
+  const agent = await getCurrentAgent(user.id);
+  await writeAuditLog({
+    actorType: "system",
+    actorId: user.id,
+    agentId: agent?.id ?? null,
+    action: verification.confirmed ? "payment.confirmed" : "payment.rejected",
+    payload: {
+      txHash: payment.txHash,
+      senderAddress: verification.senderAddress,
+      rejectionReason: verification.rejectionReason
+    }
+  });
   return getCurrentPayment(user.id);
 }

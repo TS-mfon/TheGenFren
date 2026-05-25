@@ -3,6 +3,7 @@
 import type {
   AgentArchetype,
   AgentSnapshot,
+  AuditLog,
   CreateAgentPayload,
   DelegationGrant,
   DelegationRole,
@@ -124,7 +125,18 @@ function defaultSnapshot(username = "genfren-user", email = "local@genfren.app",
         createdAt: nowIso()
       }
     ],
-    delegation: []
+    delegation: [],
+    auditLogs: [
+      {
+        id: makeId("local_aud"),
+        actorType: "system",
+        actorId: userId,
+        agentId: null,
+        action: "vault.local.created",
+        payload: { mode: "local-vault" },
+        createdAt: nowIso()
+      }
+    ]
   };
 }
 
@@ -133,7 +145,9 @@ function loadLocalSnapshot() {
   const raw = window.localStorage.getItem(LOCAL_STATE_KEY);
   if (!raw) return null;
   try {
-    return JSON.parse(raw) as AgentSnapshot;
+    const snapshot = JSON.parse(raw) as AgentSnapshot;
+    snapshot.auditLogs = snapshot.auditLogs ?? [];
+    return snapshot;
   } catch {
     return null;
   }
@@ -142,6 +156,19 @@ function loadLocalSnapshot() {
 function saveLocalSnapshot(snapshot: AgentSnapshot) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(LOCAL_STATE_KEY, JSON.stringify(snapshot));
+}
+
+function addLocalAudit(snapshot: AgentSnapshot, action: string, payload: Record<string, unknown> = {}) {
+  const log: AuditLog = {
+    id: makeId("local_aud"),
+    actorType: action.startsWith("agent.") ? "agent" : "system",
+    actorId: snapshot.agent?.id ?? snapshot.user.id,
+    agentId: snapshot.agent?.id ?? null,
+    action,
+    payload,
+    createdAt: nowIso()
+  };
+  snapshot.auditLogs = [log, ...(snapshot.auditLogs ?? [])].slice(0, 40);
 }
 
 function saveLocalAuth(payload: Pick<SignupPayload, "username" | "email" | "walletAddress">) {
@@ -210,6 +237,7 @@ async function localFallback<T>(path: string, options: RequestInit = {}) {
       confirmedAt: nowIso()
     };
     snapshot.user.status = "active";
+    addLocalAudit(snapshot, "payment.confirmed", { txHash: body.txHash, network: "bradbury", source: "local-vault" });
     saveLocalSnapshot(snapshot);
     return snapshot.payment as T;
   }
@@ -280,6 +308,13 @@ async function localFallback<T>(path: string, options: RequestInit = {}) {
       },
       ...snapshot.memory
     ];
+    addLocalAudit(snapshot, "agent.primary.deployed", {
+      name: payload.name,
+      archetype: payload.archetype,
+      topic: payload.topic,
+      contractAddress: snapshot.agent.contractAddress,
+      source: "local-vault"
+    });
     saveLocalSnapshot(snapshot);
     return snapshot as T;
   }
@@ -303,8 +338,14 @@ async function localFallback<T>(path: string, options: RequestInit = {}) {
       memoryItem,
       ...snapshot.memory
     ].slice(0, 12);
+    addLocalAudit(snapshot, "agent.chat.reasoned", {
+      source: "local-vault",
+      messageLength: message.length,
+      confidence: reply.confidence,
+      consensusState: reply.consensusState
+    });
     saveLocalSnapshot(snapshot);
-    return { reply, state: ["Retrieving local memory", "Preparing companion response"] } as T;
+    return { reply, state: ["Retrieving local memory", "Preparing companion response"], source: "local-vault" } as T;
   }
 
   if (path === "/delegations" && method === "POST") {
@@ -332,6 +373,12 @@ async function localFallback<T>(path: string, options: RequestInit = {}) {
     if (snapshot.agent) {
       snapshot.agent.subagents = [subagent, ...snapshot.agent.subagents];
     }
+    addLocalAudit(snapshot, "agent.subagent.registered", {
+      name: subagent.name,
+      archetype: subagent.archetype,
+      contractAddress: subagent.contractAddress,
+      source: "local-vault"
+    });
     saveLocalSnapshot(snapshot);
     return subagent as T;
   }
@@ -382,7 +429,7 @@ export function createAgent(payload: CreateAgentPayload) {
 }
 
 export function chatWithAgent(message: string) {
-  return request<{ reply: Record<string, unknown>; state: string[] }>("/agents/current/chat", {
+  return request<{ reply: Record<string, unknown> | string; state: string[]; source?: "contract" | "local-vault"; contractAddress?: string }>("/agents/current/chat", {
     method: "POST",
     body: JSON.stringify({ message })
   });
